@@ -21,7 +21,7 @@ function App() {
   }
 
   const toggleTodo = (id) => {
-    setTodos(todos.map(todo => 
+    setTodos(todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     ))
   }
@@ -33,6 +33,7 @@ function App() {
   return (
     <>
       <section id="center">
+        정대영
         <div className="hero">
           <img src={heroImg} className="base" width="170" height="179" alt="" />
           <img src={reactLogo} className="framework" alt="React logo" />
@@ -42,7 +43,7 @@ function App() {
           <h1>Todo List</h1>
           <p>Manage your tasks efficiently</p>
         </div>
-        
+
         <div className="todo-container">
           <form onSubmit={addTodo} className="todo-input-group">
             <input
