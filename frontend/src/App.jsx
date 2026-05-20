@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
@@ -7,27 +7,65 @@ import './App.css'
 function App() {
   const [todos, setTodos] = useState([])
   const [inputValue, setInputValue] = useState('')
+  const API_URL = 'http://localhost:8080/api/todos'
 
-  const addTodo = (e) => {
+  useEffect(() => {
+    fetchTodos()
+  }, [])
+
+  const fetchTodos = async () => {
+    try {
+      const response = await fetch(API_URL)
+      const data = await response.json()
+      setTodos(data)
+    } catch (error) {
+      console.error('Error fetching todos:', error)
+    }
+  }
+
+  const addTodo = async (e) => {
     e.preventDefault()
     if (!inputValue.trim()) return
-    const newTodo = {
-      id: Date.now(),
-      text: inputValue,
-      completed: false
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: inputValue, completed: false })
+      })
+      if (response.ok) {
+        fetchTodos()
+        setInputValue('')
+      }
+    } catch (error) {
+      console.error('Error adding todo:', error)
     }
-    setTodos([...todos, newTodo])
-    setInputValue('')
   }
 
-  const toggleTodo = (id) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ))
+  const toggleTodo = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PUT'
+      })
+      if (response.ok) {
+        fetchTodos()
+      }
+    } catch (error) {
+      console.error('Error toggling todo:', error)
+    }
   }
 
-  const deleteTodo = (id) => {
-    setTodos(todos.filter(todo => todo.id !== id))
+  const deleteTodo = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        fetchTodos()
+      }
+    } catch (error) {
+      console.error('Error deleting todo:', error)
+    }
   }
 
   return (
