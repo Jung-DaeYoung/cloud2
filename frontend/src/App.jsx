@@ -1,201 +1,201 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './App.css'
 
 function App() {
-  const [todos, setTodos] = useState([])
-  const [inputValue, setInputValue] = useState('')
-  const API_URL = 'http://localhost:8080/api/todos'
+  const [posts, setPosts] = useState([])
+  const [view, setView] = useState('list') // 'list', 'detail', 'write', 'edit'
+  const [currentPost, setCurrentPost] = useState(null)
+  
+  const API_URL = 'http://localhost:8080/api/posts'
 
   useEffect(() => {
-    fetchTodos()
+    fetchPosts()
   }, [])
 
-  const fetchTodos = async () => {
+  const fetchPosts = async () => {
     try {
       const response = await fetch(API_URL)
       const data = await response.json()
-      setTodos(data)
+      setPosts(data)
     } catch (error) {
-      console.error('Error fetching todos:', error)
+      console.error('Error fetching posts:', error)
     }
   }
 
-  const addTodo = async (e) => {
-    e.preventDefault()
-    if (!inputValue.trim()) return
-
+  const handleCreatePost = async (postData) => {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputValue, completed: false })
+        body: JSON.stringify(postData)
       })
       if (response.ok) {
-        fetchTodos()
-        setInputValue('')
+        alert('게시글이 등록되었습니다.');
+        fetchPosts()
+        setView('list')
+      } else {
+        alert('등록에 실패했습니다.');
       }
     } catch (error) {
-      console.error('Error adding todo:', error)
+      console.error('Error creating post:', error)
+      alert('서버 통신 오류가 발생했습니다.');
     }
   }
 
-  const toggleTodo = async (id) => {
-    try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT'
-      })
-      if (response.ok) {
-        fetchTodos()
-      }
-    } catch (error) {
-      console.error('Error toggling todo:', error)
-    }
-  }
-
-  const deleteTodo = async (id) => {
+  const handleDeletePost = async (id) => {
+    if (!window.confirm('정말 삭제하시겠습니까?')) return
     try {
       const response = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE'
       })
       if (response.ok) {
-        fetchTodos()
+        alert('삭제되었습니다.');
+        fetchPosts()
+        setView('list')
+      } else {
+        alert('삭제에 실패했습니다.');
       }
     } catch (error) {
-      console.error('Error deleting todo:', error)
+      console.error('Error deleting post:', error)
+      alert('서버 통신 오류가 발생했습니다.');
     }
   }
 
+  const handleUpdatePost = async (id, postData) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(postData)
+      })
+      if (response.ok) {
+        alert('수정되었습니다.');
+        fetchPosts()
+        setView('list')
+      } else {
+        alert('수정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Error updating post:', error)
+      alert('서버 통신 오류가 발생했습니다.');
+    }
+  }
+
+  // UI rendering logic will go here in next phases
   return (
-    <>
-      <section id="center">
-        정대영
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Todo List</h1>
-          <p>Manage your tasks efficiently</p>
-        </div>
+    <div className="App">
+      <header>
+        <h1>심플 게시판</h1>
+        <button onClick={() => { setView('list'); fetchPosts(); }}>목록</button>
+        <button onClick={() => setView('write')}>글쓰기</button>
+      </header>
+      <main>
+        {view === 'list' && (
+          <div className="post-list">
+            <h2>게시글 목록</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>제목</th>
+                  <th>작성자</th>
+                  <th>작성일</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posts.map(post => (
+                  <tr key={post.id} onClick={() => { setCurrentPost(post); setView('detail'); }}>
+                    <td>{post.id}</td>
+                    <td>{post.title}</td>
+                    <td>{post.author}</td>
+                    <td>{new Date(post.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {posts.length === 0 && <p>게시글이 없습니다.</p>}
+          </div>
+        )}
 
-        <div className="todo-container">
-          <form onSubmit={addTodo} className="todo-input-group">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="What needs to be done?"
-              className="todo-input"
-            />
-            <button type="submit" className="todo-add-btn">Add</button>
-          </form>
+        {view === 'write' && (
+          <div className="post-form">
+            <h2>글쓰기</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              handleCreatePost({
+                title: formData.get('title'),
+                author: formData.get('author'),
+                content: formData.get('content')
+              })
+            }}>
+              <div>
+                <label>제목</label>
+                <input name="title" required />
+              </div>
+              <div>
+                <label>작성자</label>
+                <input name="author" required />
+              </div>
+              <div>
+                <label>내용</label>
+                <textarea name="content" required rows="10" />
+              </div>
+              <button type="submit">등록</button>
+              <button type="button" onClick={() => setView('list')}>취소</button>
+            </form>
+          </div>
+        )}
 
-          <ul className="todo-list">
-            {todos.map(todo => (
-              <li key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
-                <span onClick={() => toggleTodo(todo.id)} className="todo-text">
-                  {todo.text}
-                </span>
-                <button onClick={() => deleteTodo(todo.id)} className="todo-delete-btn">
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-          {todos.length === 0 && <p className="empty-msg">No tasks yet. Add one!</p>}
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {view === 'detail' && currentPost && (
+          <div className="post-detail">
+            <h2>{currentPost.title}</h2>
+            <div className="post-info">
+              <span>작성자: {currentPost.author}</span> | 
+              <span> 작성일: {new Date(currentPost.createdAt).toLocaleString()}</span>
+            </div>
+            <hr />
+            <div className="post-content">
+              {currentPost.content}
+            </div>
+            <hr />
+            <button onClick={() => setView('list')}>목록으로</button>
+            <button onClick={() => setView('edit')}>수정</button>
+            <button onClick={() => handleDeletePost(currentPost.id)}>삭제</button>
+          </div>
+        )}
+        
+        {view === 'edit' && currentPost && (
+          <div className="post-form">
+            <h2>글 수정</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              handleUpdatePost(currentPost.id, {
+                title: formData.get('title'),
+                author: formData.get('author'),
+                content: formData.get('content')
+              })
+            }}>
+              <div>
+                <label>제목</label>
+                <input name="title" defaultValue={currentPost.title} required />
+              </div>
+              <div>
+                <label>작성자</label>
+                <input name="author" defaultValue={currentPost.author} required />
+              </div>
+              <div>
+                <label>내용</label>
+                <textarea name="content" defaultValue={currentPost.content} required rows="10" />
+              </div>
+              <button type="submit">저장</button>
+              <button type="button" onClick={() => setView('detail')}>취소</button>
+            </form>
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
 
