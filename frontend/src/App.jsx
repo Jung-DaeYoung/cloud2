@@ -6,7 +6,7 @@ function App() {
   const [view, setView] = useState('list') // 'list', 'detail', 'write', 'edit'
   const [currentPost, setCurrentPost] = useState(null)
   
-  const API_URL = 'http://localhost:8080/api/posts'
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/posts'
 
   useEffect(() => {
     fetchPosts()
@@ -14,6 +14,7 @@ function App() {
 
   const fetchPosts = async () => {
     try {
+      console.log(`Fetching posts from: ${API_URL}`);
       const response = await fetch(API_URL)
       const data = await response.json()
       setPosts(data)
@@ -24,6 +25,7 @@ function App() {
 
   const handleCreatePost = async (postData) => {
     try {
+      console.log(`Creating post at: ${API_URL}`, postData);
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,7 +47,9 @@ function App() {
   const handleDeletePost = async (id) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const url = `${API_URL}/${id}`;
+      console.log(`Deleting post at: ${url}`);
+      const response = await fetch(url, {
         method: 'DELETE'
       })
       if (response.ok) {
@@ -63,7 +67,9 @@ function App() {
 
   const handleUpdatePost = async (id, postData) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const url = `${API_URL}/${id}`;
+      console.log(`Updating post at: ${url}`, postData);
+      const response = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(postData)
